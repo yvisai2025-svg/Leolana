@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy"
+        content="
+          default-src 'self';
+          script-src  'self' 'unsafe-inline'
+                     https://cdn.jsdelivr.net
+                     https://list.notibot.ru
+                     https://fonts.googleapis.com;
+          style-src   'self' 'unsafe-inline'
+                     https://fonts.googleapis.com
+                     https://fonts.gstatic.com;
+          font-src    'self'
+                     https://fonts.gstatic.com;
+          img-src     'self' data: https:;
+          connect-src 'self' https:;
+        " />
+  <title>Светлана Леонова — Mini Apps и интерактивные лендинги</title>
+
+  <!-- Notibot Bridge + ранний перехватчик NOTIBOT_INIT -->
+  <script src="https://list.notibot.ru/notibot-bridge.js"></script>
+  <script>
+    window.notibotInitData = null;
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'NOTIBOT_INIT' && event.data.data) {
+        window.notibotInitData = event.data.data;
+        if (typeof handleNotibotInit === 'function') {
+          handleNotibotInit(event.data.data.user, event.data.data.app);
+        }
+      }
+    });
+  </script>
+
+  <!-- Шрифты из дизайн-системы концепта -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind v4 + Lucide -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+
+  <style type="text/tailwindcss">
+    @theme {
+      /* Токены дизайн-системы «Swiss Technical Studio» (Режим А — хардкод) */
+      --font-display: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
+      --font-sans:    'Inter', -apple-system, system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+      --color-canvas:      #ffffff;
+      --color-surface:     #f4f4f5;
+      --color-graphite:    #0F766E;
+      --color-ink:         #134E4A;
+      --color-charcoal:    #2F5E5A;
+      --color-card-border: #d4d4d8;
+      --color-primary:     #94faf0;
+      --color-secondary:   #d4f796;
+      --color-volt:        #bff660;
+      --color-text-main:   #134E4A;
+      --color-text-muted:  #71717a;
+
+      /* Совместимость с Notibot SDK (в Режиме А не переопределяются) */
+      --color-nb-bg:       var(--nb-bg,     var(--color-canvas));
+      --color-nb-text:     var(--nb-text,   var(--color-text-main));
+      --color-nb-text-2:   var(--nb-text-2, var(--color-text-muted));
+      --color-nb-accent:   var(--nb-accent, var(--color-primary));
+    }
+  </style>
+
+  <style>
+    :root { --signal-sweep: linear-gradient(90deg, #07cddf 52%, #9eed15 100%); }
+    html, body { background: #ffffff; color: #134E4A; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', -apple-system, system-ui, sans-serif; font-weight: 500; overflow-x: hidden; }
+
+    /* Лоадер — единственный временный fixed-оверлей */
+    .loader-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--nb-bg, var(--color-canvas, #ffffff)); transition: opacity .2s ease; }
+    .loader-spinner { width: 36px; height: 36px; border-radius: 9999px; border: 2px solid #d4d4d8; border-top-color: #134E4A; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Экраны */
+    .screen { display: none; opacity: 0; transform: scale(0.96); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .screen.active { display: block; opacity: 1; transform: scale(1); }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Дисплейная типографика */
+    .display { font-family: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif; font-weight: 500; letter-spacing: -0.04em; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .sweep-bg { background: var(--signal-sweep); }
+    .sweep-text { background: var(--signal-sweep); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+    /* Typewriter */
+    .tw-word { background-image: linear-gradient(#94faf0, #94faf0); background-repeat: no-repeat; background-size: 100% 0.28em; background-position: 0 88%; }
+    .tw-caret { display: inline-block; width: 3px; height: 0.82em; background: #134E4A; margin-left: 4px; vertical-align: -0.04em; animation: caret 1s steps(1) infinite; }
+    @keyframes caret { 50% { opacity: 0; } }
+
+    /* Тени из DESIGN.md */
+    .shadow-cloud { box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 0.6px 2.29px -1.25px rgba(0,0,0,.18), 0 2.29px 8.7px -2.5px rgba(0,0,0,.16), 0 10px 38px -3.75px rgba(0,0,0,.06); }
+    .shadow-graphite { box-shadow: 0 0.6px 2.53px -1.25px rgba(0,0,0,.18), 0 2.29px 9.61px -2.5px rgba(0,0,0,.16), 0 10px 42px -3.75px rgba(0,0,0,.06); }
+    .shadow-inset-w { box-shadow: rgba(255,255,255,.13) 0 0 0 2px inset; }
+
+    /* Чертёжная сетка */
+    .blueprint { background-image: linear-gradient(#d4d4d8 1px, transparent 1px), linear-gradient(90deg, #d4d4d8 1px, transparent 1px); background-size: 28px 28px; }
+
+    /* Парящая карточка */
+    @keyframes floaty { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-6px) rotate(-2deg); } }
+    .floaty { animation: floaty 5s ease-in-out infinite; }
+
+    /* 3D Flip */
+    .flip-card { perspective: 1000px; }
+    .flip-card-inner { position: relative; width: 100%; height: 100%; transition: transform .7s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+    .flip-card-inner.is-flipped { transform: rotateY(180deg); }
+    .flip-card-front, .flip-card-back { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 16px; overflow: hidden; }
+    .flip-card-front { background: #0F766E; transition: opacity 0s linear .3s, visibility 0s linear .3s; }
+    .flip-card-back { background: #f4f4f5; transform: rotateY(180deg); }
+    .flip-card-inner.is-flipped .flip-card-front { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+    .flip-card-inner:not(.is-flipped) .flip-card-back { visibility: hidden; pointer-events: none; transition: visibility 0s linear .3s; }
+
+    /* Reveal при скролле */
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+
+    /* Квиз */
+    .q-step { display: none; }
+    .q-step.active { display: block; animation: stepIn .35s ease; }
+    @keyframes stepIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+    .chip { transition: background .2s ease, border-color .2s ease, transform .15s ease; }
+    .chip:active { transform: scale(.97); }
+    .chip.is-on { border-color: #134E4A; background: #ffffff; }
+    .chip.is-on .chip-dot { background: #94faf0; border-color: #134E4A; }
+
+    /* FAQ */
+    .faq-body { max-height: 0; overflow: hidden; transition: max-height .35s ease; }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-icon { transition: transform .25s ease; }
+
+    /* Stories ring */
+    .story-ring { background: var(--signal-sweep); padding: 2px; border-radius: 1000px; }
+    .story-ring.muted { background: #d4d4d8; }
+
+    /* Кнопки */
+    .btn-aqua { background: #94faf0; color: #134E4A; border-radius: 16px; transition: transform .15s ease, filter .2s ease; }
+    .btn-aqua:active { transform: scale(.98); filter: brightness(.96); }
+    .bg-lagoon { background: linear-gradient(135deg, #0F766E 0%, #0D9488 55%, #10B981 100%); }
+    .btn-graphite { background: #0F766E; color: #ffffff; border-radius: 12px; box-shadow: rgba(255,255,255,.13) 0 0 0 2px inset; }
+    .btn-ghost-dark { background: rgba(255,255,255,.1); color: #ffffff; border-radius: 16px; box-shadow: rgba(255,255,255,.13) 0 0 0 2px inset; }
+  </style>
+</head>
+<body class="bg-canvas text-text-main font-sans antialiased">
+
+  <!-- Лоадер -->
+  <div id="loading-screen" class="loader-screen">
+    <div class="loader-spinner mb-4"></div>
+    <span class="text-sm tracking-widest text-ink uppercase font-bold animate-pulse">Загрузка...</span>
+  </div>
+
+  <div id="screen-start" class="screen active">
+    <div class="max-w-md mx-auto min-h-[100dvh] bg-canvas relative overflow-x-hidden pb-28">
+
+      <!-- Анонс-строка -->
+      <section id="announce" data-section-name="Анонс-строка" class="w-full bg-secondary px-4 py-2">
+        <p class="text-[13px] leading-[1.5] text-ink/80 text-center">Mini Apps · Интерактивные лендинги · Тильда · Нейрофото</p>
+      </section>
+
+      <!-- Header (персональный) -->
+      <section id="header" data-section-name="Шапка" class="sticky top-0 z-40 bg-canvas/90 backdrop-blur-md border-b border-card-border">
+        <div class="flex items-center gap-3 px-4 py-3">
+          <div id="userAvatar" class="w-10 h-10 shrink-0 rounded-full bg-graphite text-white flex items-center justify-center text-sm font-semibold overflow-hidden">?</div>
+          <div class="min-w-0 flex-1">
+            <div id="userGreeting" class="text-[14px] font-semibold leading-tight truncate">Привет!</div>
+            <div class="text-[12px] text-text-muted leading-tight truncate mt-0.5">Светлана Леонова · Mini Apps &amp; лендинги</div>
+          </div>
+          <button type="button" onclick="handleCta(event)" class="btn-graphite shrink-0 px-4 py-2 text-[14px] font-medium">Связаться</button>
+        </div>
+      </section>
+
+      <!-- HERO: Top-Heavy Editorial -->
+      <section id="hero" data-section-name="Главный экран" class="relative w-full min-h-[560px] overflow-hidden">
+        <div id="hero-parallax-wrap" class="absolute -top-[20%] left-0 w-full h-[145%] transition-transform duration-75 ease-out">
+          <img id="hero-img" data-replaceable-image="true"
+               src="https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?auto=format&fit=crop&w=1200&q=80"
+               alt="Светлое рабочее место с ноутбуком"
+               class="w-full h-full object-cover pointer-events-auto cursor-pointer select-none" draggable="false" />
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-b from-canvas via-canvas/85 to-canvas/25 pointer-events-none"></div>
+        <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-canvas to-transparent pointer-events-none"></div>
+        <div class="absolute inset-0 blueprint opacity-[0.18] pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col justify-between min-h-[560px] px-5 pt-7 pb-8 pointer-events-none">
+          <div class="pointer-events-auto">
+            <div class="mono text-[12px] text-text-muted mb-4">// для экспертов и игропрактиков</div>
+            <h1 class="display text-[38px] leading-[0.98] text-ink min-h-[150px] break-words">
+              Упакую вашу экспертизу в<br>
+              <span id="tw-word" class="tw-word">Mini App</span><span class="tw-caret"></span>
+            </h1>
+            <p class="mt-4 text-[16px] leading-[1.4] text-charcoal max-w-[330px]">Ваши продукты, игры и запись — прямо в&nbsp;Telegram и&nbsp;MAX. Клиенту ничего не нужно скачивать.</p>
+            <div class="mt-6 flex items-center gap-3">
+              <button type="button" onclick="scrollToId('diagnostics')" class="btn-aqua inline-flex items-center gap-2 pl-[22px] pr-4 py-3 text-[14px] font-semibold">
+                Подобрать формат <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+              <button type="button" onclick="handleCta(event)" class="inline-flex items-center gap-1.5 px-3 py-3 text-[14px] text-ink underline underline-offset-4 decoration-card-border">Написать</button>
+            </div>
+          </div>
+
+          <!-- Парящая карточка-превью: экран Mini App -->
+          <div id="hero-float" class="pointer-events-auto mt-8 self-end w-[86%] max-w-[300px] transition-transform duration-75 ease-out">
+            <div class="floaty bg-canvas rounded-2xl shadow-cloud p-4">
+              <div class="flex items-center gap-2 pb-3 border-b border-card-border">
+                <div class="w-7 h-7 rounded-lg bg-graphite flex items-center justify-center"><i data-lucide="smartphone" class="w-4 h-4 text-primary"></i></div>
+                <div class="min-w-0">
+                  <div class="text-[13px] font-semibold leading-tight">Mini App</div>
+                  <div class="mono text-[10px] text-text-muted leading-tight">пример экрана</div>
+                </div>
+                <span class="ml-auto mono text-[10px] text-text-muted">Telegram</span>
+              </div>
+              <div class="pt-3">
+                <div class="text-[12px] text-text-muted mb-2">Ближайшие события</div>
+                <div class="flex items-center gap-3 bg-surface rounded-xl px-3 py-2.5">
+                  <div class="min-w-0 flex-1">
+                    <div class="text-[13px] font-semibold leading-tight truncate">Трансформационная игра</div>
+                    <div class="mono text-[10px] text-text-muted mt-0.5">сб · 19:00 · онлайн</div>
+                  </div>
+                  <span class="shrink-0 bg-primary text-ink text-[11px] font-semibold px-2.5 py-1.5 rounded-lg">Записаться</span>
+                </div>
+                <div class="flex items-center gap-3 bg-surface rounded-xl px-3 py-2.5 mt-2">
+                  <div class="min-w-0 flex-1">
+                    <div class="text-[13px] font-semibold leading-tight truncate">Консультация 1:1</div>
+                    <div class="mono text-[10px] text-text-muted mt-0.5">60 мин · онлайн</div>
+                  </div>
+                  <span class="shrink-0 border border-card-border text-[11px] font-semibold px-2.5 py-1.5 rounded-lg">Выбрать</span>
+                </div>
+                <div class="flex items-center gap-2 mt-3 text-[12px] text-charcoal">
+                  <i data-lucide="gift" class="w-4 h-4"></i><span class="min-w-0">Пригласи друга — получи бонус</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- МЕТРИКИ: Big Typo Display -->
+      <section id="metrics" data-section-name="Цифры" class="px-5 pt-6 pb-10">
+        <div class="mono text-[12px] text-text-muted mb-2">// почему Mini App</div>
+        <div class="border-t border-card-border">
+          <div class="reveal flex items-end gap-4 py-5 border-b border-card-border">
+            <div class="display text-[76px] leading-[0.8] text-ink shrink-0"><span class="count" data-to="0">0</span></div>
+            <p class="min-w-0 break-words text-[14px] leading-[1.4] text-charcoal pb-1">скачиваний — приложение открывается внутри мессенджера</p>
+          </div>
+          <div class="reveal flex items-end gap-4 py-5 border-b border-card-border">
+            <div class="display text-[76px] leading-[0.8] text-ink shrink-0"><span class="count" data-to="100">0</span><span class="sweep-text">%</span></div>
+            <p class="min-w-0 break-words text-[14px] leading-[1.4] text-charcoal pb-1">контактов остаются в вашей базе</p>
+          </div>
+          <div class="reveal flex items-end gap-4 py-5 border-b border-card-border">
+            <div class="display text-[76px] leading-[0.8] text-ink shrink-0"><span class="count" data-to="2">0</span></div>
+            <p class="min-w-0 break-words text-[14px] leading-[1.4] text-charcoal pb-1">мессенджера: Telegram и MAX</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ИНТЕРАКТИВ: экспресс-диагностика -->
+      <section id="diagnostics" data-section-name="Подбор формата" class="px-5 pt-6 pb-10 scroll-mt-20">
+        <div class="mono text-[12px] text-text-muted mb-3">// подбор формата · 3 шага</div>
+        <h2 class="display text-[36px] leading-[1] text-ink">Что подойдёт именно вам?</h2>
+        <p class="mt-3 text-[14px] leading-[1.4] text-text-muted">Ответьте на 3 вопроса — подскажу, с чего начать упаковку.</p>
+
+        <div class="mt-6 bg-surface rounded-2xl shadow-cloud p-4">
+          <!-- Прогресс -->
+          <div class="flex gap-1.5 mb-4">
+            <div class="h-1 flex-1 rounded-full bg-card-border overflow-hidden"><div id="qp-1" class="h-full w-0 bg-ink transition-all duration-300"></div></div>
+            <div class="h-1 flex-1 rounded-full bg-card-border overflow-hidden"><div id="qp-2" class="h-full w-0 bg-ink transition-all duration-300"></div></div>
+            <div class="h-1 flex-1 rounded-full bg-card-border overflow-hidden"><div id="qp-3" class="h-full w-0 bg-ink transition-all duration-300"></div></div>
+          </div>
+
+          <!-- Шаг 1 -->
+          <div class="q-step active" data-step="1">
+            <div class="mono text-[11px] text-text-muted">01 / 03</div>
+            <h3 class="display text-[22px] leading-[1.1] mt-1 mb-4">Кто вы?</h3>
+            <div class="space-y-2">
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickSingle(this, 'role', 'game')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Игропрактик, веду игры</span></button>
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickSingle(this, 'role', 'soft')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Психолог, коуч, эксперт мягкой ниши</span></button>
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickSingle(this, 'role', 'beauty')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Бьюти-мастер или салон</span></button>
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickSingle(this, 'role', 'other')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Другой бизнес</span></button>
+            </div>
+          </div>
+
+          <!-- Шаг 2 (мультивыбор) -->
+          <div class="q-step" data-step="2">
+            <div class="mono text-[11px] text-text-muted">02 / 03</div>
+            <h3 class="display text-[22px] leading-[1.1] mt-1 mb-1">Что нужно сейчас?</h3>
+            <p class="text-[12px] text-text-muted mb-4">Можно выбрать несколько</p>
+            <div class="space-y-2">
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickMulti(this, 'catalog')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Собрать продукты и запись в одном месте</span></button>
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickMulti(this, 'base')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Собирать свою базу и возвращать клиентов</span></button>
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickMulti(this, 'leads')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Страница под запуск или рекламу, которая собирает заявки</span></button>
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickMulti(this, 'site')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Полноценный сайт, который можно править самой</span></button>
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickMulti(this, 'photo')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Свежие фото для личного бренда</span></button>
+              <button type="button" class="chip w-full flex items-center gap-3 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickMulti(this, 'auto')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0 break-words">Автоматические ответы клиентам</span></button>
+            </div>
+            <div id="q2-hint" class="hidden mt-3 text-[12px] text-charcoal bg-secondary/60 rounded-lg px-3 py-2">Выберите хотя бы один вариант</div>
+            <div class="flex gap-2 mt-4">
+              <button type="button" onclick="goStep(1)" class="px-4 py-3 rounded-xl border border-card-border text-[14px]">Назад</button>
+              <button type="button" onclick="nextFromNeeds()" class="btn-aqua flex-1 inline-flex justify-center items-center gap-2 px-4 py-3 text-[14px] font-semibold">Далее <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+
+          <!-- Шаг 3 -->
+          <div class="q-step" data-step="3">
+            <div class="mono text-[11px] text-text-muted">03 / 03</div>
+            <h3 class="display text-[22px] leading-[1.1] mt-1 mb-4">Где ваша аудитория?</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="chip flex items-center gap-2 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickSingle(this, 'channel', 'Telegram')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0">Telegram</span></button>
+              <button type="button" class="chip flex items-center gap-2 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickSingle(this, 'channel', 'Instagram')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0">Instagram</span></button>
+              <button type="button" class="chip flex items-center gap-2 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickSingle(this, 'channel', 'ВКонтакте')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0">ВКонтакте</span></button>
+              <button type="button" class="chip flex items-center gap-2 text-left bg-canvas/60 border border-card-border rounded-xl px-3 py-3 text-[14px]" onclick="pickSingle(this, 'channel', 'Везде понемногу')"><span class="chip-dot w-3 h-3 rounded-[4px] border border-card-border shrink-0"></span><span class="min-w-0">Везде понемногу</span></button>
+            </div>
+            <button type="button" onclick="goStep(2)" class="mt-4 px-4 py-3 rounded-xl border border-card-border text-[14px]">Назад</button>
+          </div>
+
+          <!-- Результат -->
+          <div class="q-step" data-step="4">
+            <div class="mono text-[11px] text-text-muted">// рекомендация</div>
+            <div class="mt-2 bg-graphite text-white rounded-2xl shadow-graphite p-4">
+              <div class="mono text-[11px] text-white/50">начать с</div>
+              <div id="res-title" class="display text-[30px] leading-[1] mt-1">Mini App</div>
+              <p id="res-desc" class="text-[14px] leading-[1.4] text-white/70 mt-2"></p>
+            </div>
+            <div id="res-extras-wrap" class="mt-4 hidden">
+              <div class="text-[12px] text-text-muted mb-2">Дополнить:</div>
+              <div id="res-extras" class="flex flex-wrap gap-2"></div>
+            </div>
+            <ul id="res-list" class="mt-4 space-y-2"></ul>
+            <p id="res-channel" class="mt-3 text-[13px] leading-[1.4] text-text-muted"></p>
+            <div class="mt-3 text-[13px] text-charcoal bg-canvas rounded-xl border border-card-border px-3 py-2">Стоимость — после консультации: зависит от сложности решения.</div>
+            <button type="button" onclick="discussResult(event)" class="btn-aqua w-full mt-4 inline-flex justify-center items-center gap-2 px-4 py-3.5 text-[14px] font-semibold">Обсудить на консультации <i data-lucide="arrow-up-right" class="w-4 h-4"></i></button>
+            <div id="res-copy" class="hidden mt-2 text-[12px] text-center text-charcoal">Ответы скопированы — вставьте их в чат</div>
+            <button type="button" onclick="resetQuiz()" class="w-full mt-2 inline-flex justify-center items-center gap-2 py-2.5 text-[13px] text-text-muted"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Пройти заново</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3D FLIP PEEK-SLIDER: услуги -->
+      <section id="services" data-section-name="Услуги" class="pt-10 pb-8 scroll-mt-20">
+        <div class="px-5 flex items-end justify-between gap-4">
+          <div class="min-w-0">
+            <div class="mono text-[12px] text-text-muted mb-3">// форматы</div>
+            <h2 class="display text-[36px] leading-[1] text-ink">Что можно создать</h2>
+          </div>
+          <div id="svc-counter" class="mono text-[13px] text-text-muted shrink-0 pb-1">01/06</div>
+        </div>
+        <p class="px-5 mt-3 text-[14px] text-text-muted">Нажмите на карточку, чтобы перевернуть</p>
+
+        <div class="px-5 mt-5">
+          <div id="svc-slider" class="flex overflow-x-auto snap-x snap-mandatory gap-3.5 -mx-5 px-5 no-scrollbar pb-3 scroll-smooth">
+
+            <!-- 01 Mini App -->
+            <div class="flip-card w-[82vw] max-w-[330px] h-[430px] shrink-0 snap-center" onclick="toggleCardFlip(this, event)">
+              <div class="flip-card-inner">
+                <div class="flip-card-front shadow-graphite">
+                  <img data-replaceable-image="true" src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=800&q=80" alt="Mini App" class="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-auto cursor-pointer select-none" draggable="false" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-graphite via-graphite/55 to-transparent pointer-events-none"></div>
+                  <div class="relative h-full flex flex-col justify-between p-5 pointer-events-none">
+                    <div class="flex items-center justify-between"><span class="mono text-[12px] text-white/60">01 / 06</span><span class="text-[11px] font-semibold bg-primary text-ink px-2.5 py-1 rounded-lg">Главный формат</span></div>
+                    <div>
+                      <div class="display text-[34px] leading-[0.95] text-white">Mini App</div>
+                      <p class="text-[14px] leading-[1.4] text-white/65 mt-2">Ваши продукты, игры и запись — в приложении внутри Telegram</p>
+                      <div class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-white/50"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Подробнее</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flip-card-back border border-card-border p-5 flex flex-col">
+                  <div class="mono text-[12px] text-text-muted">01 · что входит</div>
+                  <div class="display text-[26px] leading-[1] mt-1">Mini App</div>
+                  <ul class="mt-4 space-y-2.5 text-[14px] leading-[1.35] text-charcoal flex-1">
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Витрина ваших продуктов, игр и консультаций</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Открывается в Telegram или MAX — без скачивания</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Каждый пользователь сохраняется в вашей базе</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Геймификация, приглашение друзей и рассылки</span></li>
+                  </ul>
+                  <div class="mono text-[12px] text-text-muted border-t border-card-border pt-3">Стоимость — после консультации</div>
+                  <button type="button" onclick="handleCta(event)" data-notibot-action="openProduct" data-id="" data-service="miniapp" class="btn-aqua mt-3 w-full inline-flex justify-center items-center gap-2 py-3 text-[14px] font-semibold">Обсудить Mini App <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 02 Интерактивный лендинг -->
+            <div class="flip-card w-[82vw] max-w-[330px] h-[430px] shrink-0 snap-center" onclick="toggleCardFlip(this, event)">
+              <div class="flip-card-inner">
+                <div class="flip-card-front shadow-graphite">
+                  <img data-replaceable-image="true" src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80" alt="Интерактивный лендинг" class="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-auto cursor-pointer select-none" draggable="false" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-graphite via-graphite/55 to-transparent pointer-events-none"></div>
+                  <div class="relative h-full flex flex-col justify-between p-5 pointer-events-none">
+                    <div class="flex items-center justify-between"><span class="mono text-[12px] text-white/60">02 / 06</span><span class="text-[11px] font-semibold bg-primary text-ink px-2.5 py-1 rounded-lg">Главный формат</span></div>
+                    <div>
+                      <div class="display text-[34px] leading-[0.95] text-white">Интерактивный лендинг</div>
+                      <p class="text-[14px] leading-[1.4] text-white/65 mt-2">Страница под запуск, которая вовлекает и собирает заявки</p>
+                      <div class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-white/50"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Подробнее</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flip-card-back border border-card-border p-5 flex flex-col">
+                  <div class="mono text-[12px] text-text-muted">02 · что входит</div>
+                  <div class="display text-[26px] leading-[1] mt-1">Интерактивный лендинг</div>
+                  <ul class="mt-4 space-y-2.5 text-[14px] leading-[1.35] text-charcoal flex-1">
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Квизы, диагностики, калькуляторы и 3D-карточки</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Под запуск курса, игры, марафона или консультаций</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Мобильная вёрстка, открывается в Telegram</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Кнопки ведут в диалог с вами или к заявке</span></li>
+                  </ul>
+                  <div class="mono text-[12px] text-text-muted border-t border-card-border pt-3">Стоимость — после консультации</div>
+                  <button type="button" onclick="handleCta(event)" data-notibot-action="openProduct" data-id="" data-service="landing" class="btn-aqua mt-3 w-full inline-flex justify-center items-center gap-2 py-3 text-[14px] font-semibold">Обсудить лендинг <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 03 Тильда -->
+            <div class="flip-card w-[82vw] max-w-[330px] h-[430px] shrink-0 snap-center" onclick="toggleCardFlip(this, event)">
+              <div class="flip-card-inner">
+                <div class="flip-card-front shadow-graphite">
+                  <img data-replaceable-image="true" src="https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?auto=format&fit=crop&w=800&q=80" alt="Сайт на Тильде" class="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-auto cursor-pointer select-none" draggable="false" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-graphite via-graphite/55 to-transparent pointer-events-none"></div>
+                  <div class="relative h-full flex flex-col justify-between p-5 pointer-events-none">
+                    <div class="flex items-center justify-between"><span class="mono text-[12px] text-white/60">03 / 06</span><span class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center"><i data-lucide="globe" class="w-5 h-5 text-ink"></i></span></div>
+                    <div>
+                      <div class="display text-[34px] leading-[0.95] text-white">Сайт на Тильде</div>
+                      <p class="text-[14px] leading-[1.4] text-white/65 mt-2">Аккуратный сайт эксперта, который удобно обновлять самой</p>
+                      <div class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-white/50"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Подробнее</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flip-card-back border border-card-border p-5 flex flex-col">
+                  <div class="mono text-[12px] text-text-muted">03 · что входит</div>
+                  <div class="display text-[26px] leading-[1] mt-1">Сайт на Тильде</div>
+                  <ul class="mt-4 space-y-2.5 text-[14px] leading-[1.35] text-charcoal flex-1">
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Сайт-визитка или многостраничный сайт на Tilda</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Тексты и фото можно менять самой в редакторе</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Адаптив под мобильные устройства</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Формы заявок и связь с мессенджерами</span></li>
+                  </ul>
+                  <div class="mono text-[12px] text-text-muted border-t border-card-border pt-3">Стоимость — после консультации</div>
+                  <button type="button" onclick="handleCta(event)" data-notibot-action="openProduct" data-id="" data-service="tilda" class="btn-aqua mt-3 w-full inline-flex justify-center items-center gap-2 py-3 text-[14px] font-semibold">Обсудить сайт <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 04 Нейрофотосессия -->
+            <div class="flip-card w-[82vw] max-w-[330px] h-[430px] shrink-0 snap-center" onclick="toggleCardFlip(this, event)">
+              <div class="flip-card-inner">
+                <div class="flip-card-front shadow-graphite">
+                  <img data-replaceable-image="true" src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80" alt="Нейрофотосессия" class="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-auto cursor-pointer select-none" draggable="false" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-graphite via-graphite/55 to-transparent pointer-events-none"></div>
+                  <div class="relative h-full flex flex-col justify-between p-5 pointer-events-none">
+                    <div class="flex items-center justify-between"><span class="mono text-[12px] text-white/60">04 / 06</span><span class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center"><i data-lucide="camera" class="w-5 h-5 text-ink"></i></span></div>
+                    <div>
+                      <div class="display text-[34px] leading-[0.95] text-white">Нейро&shy;фотосессия</div>
+                      <p class="text-[14px] leading-[1.4] text-white/65 mt-2">Фото для личного бренда — без студии и съёмочного дня</p>
+                      <div class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-white/50"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Подробнее</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flip-card-back border border-card-border p-5 flex flex-col">
+                  <div class="mono text-[12px] text-text-muted">04 · что входит</div>
+                  <div class="display text-[26px] leading-[1] mt-1">Нейрофотосессия</div>
+                  <ul class="mt-4 space-y-2.5 text-[14px] leading-[1.35] text-charcoal flex-1">
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Образы создаются нейросетью по вашим фото</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Для соцсетей, сайта, Mini App и обложек</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Стиль и сюжеты обсуждаем заранее</span></li>
+                  </ul>
+                  <div class="mono text-[12px] text-text-muted border-t border-card-border pt-3">Стоимость — после консультации</div>
+                  <button type="button" onclick="handleCta(event)" data-notibot-action="openProduct" data-id="" data-service="neurophoto" class="btn-aqua mt-3 w-full inline-flex justify-center items-center gap-2 py-3 text-[14px] font-semibold">Обсудить фотосессию <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 05 Презентация -->
+            <div class="flip-card w-[82vw] max-w-[330px] h-[430px] shrink-0 snap-center" onclick="toggleCardFlip(this, event)">
+              <div class="flip-card-inner">
+                <div class="flip-card-front shadow-graphite">
+                  <img data-replaceable-image="true" src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80" alt="Презентация" class="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-auto cursor-pointer select-none" draggable="false" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-graphite via-graphite/55 to-transparent pointer-events-none"></div>
+                  <div class="relative h-full flex flex-col justify-between p-5 pointer-events-none">
+                    <div class="flex items-center justify-between"><span class="mono text-[12px] text-white/60">05 / 06</span><span class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center"><i data-lucide="presentation" class="w-5 h-5 text-ink"></i></span></div>
+                    <div>
+                      <div class="display text-[34px] leading-[0.95] text-white">Презентация</div>
+                      <p class="text-[14px] leading-[1.4] text-white/65 mt-2">Понятная подача вашей программы, игры или продукта</p>
+                      <div class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-white/50"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Подробнее</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flip-card-back border border-card-border p-5 flex flex-col">
+                  <div class="mono text-[12px] text-text-muted">05 · что входит</div>
+                  <div class="display text-[26px] leading-[1] mt-1">Презентация</div>
+                  <ul class="mt-4 space-y-2.5 text-[14px] leading-[1.35] text-charcoal flex-1">
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Структура и логика подачи</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Визуальный стиль под ваш бренд</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Для эфиров, вебинаров и встреч с партнёрами</span></li>
+                  </ul>
+                  <div class="mono text-[12px] text-text-muted border-t border-card-border pt-3">Стоимость — после консультации</div>
+                  <button type="button" onclick="handleCta(event)" data-notibot-action="openProduct" data-id="" data-service="presentation" class="btn-aqua mt-3 w-full inline-flex justify-center items-center gap-2 py-3 text-[14px] font-semibold">Обсудить презентацию <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 06 AI-агент (под запрос) -->
+            <div class="flip-card w-[82vw] max-w-[330px] h-[430px] shrink-0 snap-center" onclick="toggleCardFlip(this, event)">
+              <div class="flip-card-inner">
+                <div class="flip-card-front shadow-graphite">
+                  <img data-replaceable-image="true" src="https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80" alt="AI-агент" class="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-auto cursor-pointer select-none" draggable="false" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-graphite via-graphite/60 to-transparent pointer-events-none"></div>
+                  <div class="relative h-full flex flex-col justify-between p-5 pointer-events-none">
+                    <div class="flex items-center justify-between"><span class="mono text-[12px] text-white/60">06 / 06</span><span class="text-[11px] font-semibold shadow-inset-w bg-white/10 text-white px-2.5 py-1 rounded-lg">Под запрос</span></div>
+                    <div>
+                      <div class="display text-[34px] leading-[0.95] text-white">AI-агент</div>
+                      <p class="text-[14px] leading-[1.4] text-white/65 mt-2">Отвечает клиентам 24/7 — отдельно или вместе с Mini App</p>
+                      <div class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-white/50"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Подробнее</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flip-card-back border border-card-border p-5 flex flex-col">
+                  <div class="mono text-[12px] text-text-muted">06 · под запрос</div>
+                  <div class="display text-[26px] leading-[1] mt-1">AI-агент</div>
+                  <ul class="mt-4 space-y-2.5 text-[14px] leading-[1.35] text-charcoal flex-1">
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Отвечает клиентам сразу и круглосуточно</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Знает ваши услуги и помогает выбрать</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Запись в YClients или DiKiDi</span></li>
+                    <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">Ведёт несколько диалогов одновременно</span></li>
+                  </ul>
+                  <div class="mono text-[12px] text-text-muted border-t border-card-border pt-3">Стоимость — после консультации</div>
+                  <button type="button" onclick="handleCta(event)" data-notibot-action="openProduct" data-id="" data-service="ai-agent" class="btn-aqua mt-3 w-full inline-flex justify-center items-center gap-2 py-3 text-[14px] font-semibold">Обсудить AI-агента <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- СОЦДОКАЗАТЕЛЬСТВА: Stories -->
+      <section id="stories" data-section-name="Идеи и кейсы" class="px-5 pt-8 pb-10">
+        <div class="mono text-[12px] text-text-muted mb-3">// идеи и кейсы</div>
+        <h2 class="display text-[36px] leading-[1] text-ink">Посмотрите, как это выглядит</h2>
+        <div class="mt-6 flex gap-4 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1">
+          <button type="button" onclick="openStory('game')" class="flex flex-col items-center gap-2 shrink-0 w-[76px]">
+            <span class="story-ring"><span class="block w-[64px] h-[64px] rounded-full bg-graphite border-2 border-canvas flex items-center justify-center"><i data-lucide="dices" class="w-6 h-6 text-primary"></i></span></span>
+            <span class="text-[12px] leading-tight text-center text-charcoal">Для игро&shy;практика</span>
+          </button>
+          <button type="button" onclick="openStory('expert')" class="flex flex-col items-center gap-2 shrink-0 w-[76px]">
+            <span class="story-ring"><span class="block w-[64px] h-[64px] rounded-full bg-surface border-2 border-canvas flex items-center justify-center"><i data-lucide="heart-handshake" class="w-6 h-6 text-ink"></i></span></span>
+            <span class="text-[12px] leading-tight text-center text-charcoal">Для эксперта</span>
+          </button>
+          <button type="button" onclick="openStory('spa')" class="flex flex-col items-center gap-2 shrink-0 w-[76px]">
+            <span class="story-ring"><span class="block w-[64px] h-[64px] rounded-full border-2 border-canvas overflow-hidden"><img data-replaceable-image="true" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=200&q=80" alt="Кейс: SPA-салон" class="w-full h-full object-cover pointer-events-auto cursor-pointer select-none" draggable="false" /></span></span>
+            <span class="text-[12px] leading-tight text-center text-charcoal">Кейс: SPA-салон</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ЭТАПЫ -->
+      <section id="process" data-section-name="Как проходит работа" class="bg-surface px-5 py-10">
+        <div class="mono text-[12px] text-text-muted mb-3">// как работаем</div>
+        <h2 class="display text-[36px] leading-[1] text-ink">От идеи до запуска</h2>
+        <div class="relative mt-7 pl-8">
+          <div class="absolute left-[11px] top-2 bottom-2 w-[2px] rounded-full pointer-events-none" style="background: linear-gradient(180deg, #07cddf 52%, #9eed15 100%);"></div>
+          <div class="reveal relative pb-6"><span class="absolute -left-8 top-0 w-6 h-6 rounded-lg bg-graphite text-white mono text-[11px] flex items-center justify-center">01</span><div class="text-[16px] font-semibold">Консультация</div><p class="text-[14px] leading-[1.4] text-text-muted mt-1">Разбираем ваш продукт и задачу, подбираем формат и называем стоимость</p></div>
+          <div class="reveal relative pb-6"><span class="absolute -left-8 top-0 w-6 h-6 rounded-lg bg-graphite text-white mono text-[11px] flex items-center justify-center">02</span><div class="text-[16px] font-semibold">Структура</div><p class="text-[14px] leading-[1.4] text-text-muted mt-1">Продумываем экраны, тексты и путь клиента до записи</p></div>
+          <div class="reveal relative pb-6"><span class="absolute -left-8 top-0 w-6 h-6 rounded-lg bg-graphite text-white mono text-[11px] flex items-center justify-center">03</span><div class="text-[16px] font-semibold">Дизайн и сборка</div><p class="text-[14px] leading-[1.4] text-text-muted mt-1">Собираю Mini App, лендинг или сайт в вашем стиле</p></div>
+          <div class="reveal relative pb-6"><span class="absolute -left-8 top-0 w-6 h-6 rounded-lg bg-graphite text-white mono text-[11px] flex items-center justify-center">04</span><div class="text-[16px] font-semibold">Тест и правки</div><p class="text-[14px] leading-[1.4] text-text-muted mt-1">Проверяем на телефоне, вносим правки</p></div>
+          <div class="reveal relative"><span class="absolute -left-8 top-0 w-6 h-6 rounded-lg bg-primary text-ink mono text-[11px] flex items-center justify-center">05</span><div class="text-[16px] font-semibold">Запуск</div><p class="text-[14px] leading-[1.4] text-text-muted mt-1">Публикуем и передаём вам доступы</p></div>
+        </div>
+      </section>
+
+      <!-- АВТОР -->
+      <section id="author" data-section-name="Автор" class="px-5 pt-12 pb-10">
+        <div class="mono text-[12px] text-text-muted mb-3">// кто делает</div>
+        <div class="bg-canvas rounded-2xl shadow-cloud overflow-hidden">
+          <div class="relative h-[340px] bg-surface">
+            <img data-replaceable-image="true" src="data:image/jpeg;base64,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" alt="Светлана Леонова" class="absolute inset-0 w-full h-full object-cover object-[50%_25%] pointer-events-auto cursor-pointer select-none" draggable="false" />
+            <div class="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-canvas to-transparent pointer-events-none"></div>
+          </div>
+          <div class="px-5 pb-5 -mt-6 relative">
+            <h2 class="display text-[34px] leading-[1] text-ink">Светлана Леонова</h2>
+            <p class="mt-2 text-[14px] text-charcoal">Разработчик Telegram Mini Apps, интерактивных лендингов и сайтов на Тильде</p>
+            <p class="mt-3 text-[14px] leading-[1.45] text-text-muted">Помогаю экспертам и игропрактикам упаковать продукты так, чтобы клиенту было легко разобраться, выбрать и записаться — прямо в мессенджере.</p>
+            <div class="grid grid-cols-3 gap-2 mt-5">
+              <div class="bg-surface rounded-xl p-3"><div class="display text-[28px] leading-none">6</div><div class="text-[11px] leading-tight text-text-muted mt-1.5">форматов под задачу</div></div>
+              <div class="bg-surface rounded-xl p-3"><div class="display text-[28px] leading-none">2</div><div class="text-[11px] leading-tight text-text-muted mt-1.5">мессенджера: Telegram и MAX</div></div>
+              <div class="bg-surface rounded-xl p-3"><div class="display text-[28px] leading-none">1</div><div class="text-[11px] leading-tight text-text-muted mt-1.5">исполнитель от идеи до запуска</div></div>
+            </div>
+            <button type="button" onclick="handleCta(event)" class="btn-graphite w-full mt-5 inline-flex justify-center items-center gap-2 px-4 py-3 text-[14px]">Написать Светлане <i data-lucide="arrow-up-right" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq" data-section-name="Вопросы и ответы" class="px-5 pt-4 pb-12">
+        <div class="mono text-[12px] text-text-muted mb-3">// вопросы</div>
+        <h2 class="display text-[36px] leading-[1] text-ink">Частые вопросы</h2>
+        <div class="mt-6 border-t border-card-border">
+          <div class="faq-item border-b border-card-border">
+            <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between gap-4 py-4 text-left"><span class="min-w-0 break-words text-[15px] font-semibold">Сколько стоит?</span><i data-lucide="plus" class="faq-icon w-5 h-5 shrink-0"></i></button>
+            <div class="faq-body"><p class="pb-4 text-[14px] leading-[1.45] text-text-muted">Стоимость зависит от сложности решения и называется после консультации, когда понятны задача и объём работ.</p></div>
+          </div>
+          <div class="faq-item border-b border-card-border">
+            <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between gap-4 py-4 text-left"><span class="min-w-0 break-words text-[15px] font-semibold">Чем Mini App отличается от сайта?</span><i data-lucide="plus" class="faq-icon w-5 h-5 shrink-0"></i></button>
+            <div class="faq-body"><p class="pb-4 text-[14px] leading-[1.45] text-text-muted">Mini App живёт внутри Telegram или MAX: клиент открывает его в один тап, а его контакт сразу сохраняется в вашей базе. Сайт удобен для поиска и рекламы. Часто они хорошо работают вместе.</p></div>
+          </div>
+          <div class="faq-item border-b border-card-border">
+            <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between gap-4 py-4 text-left"><span class="min-w-0 break-words text-[15px] font-semibold">Нужно ли готовое ТЗ?</span><i data-lucide="plus" class="faq-icon w-5 h-5 shrink-0"></i></button>
+            <div class="faq-body"><p class="pb-4 text-[14px] leading-[1.45] text-text-muted">Нет. Достаточно рассказать о себе и своих продуктах — структуру соберём вместе на консультации.</p></div>
+          </div>
+          <div class="faq-item border-b border-card-border">
+            <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between gap-4 py-4 text-left"><span class="min-w-0 break-words text-[15px] font-semibold">Как проходит нейрофотосессия?</span><i data-lucide="plus" class="faq-icon w-5 h-5 shrink-0"></i></button>
+            <div class="faq-body"><p class="pb-4 text-[14px] leading-[1.45] text-text-muted">Вы присылаете свои фото, мы обсуждаем стиль и сюжеты, а образы создаются нейросетью. Студия и съёмочный день не нужны.</p></div>
+          </div>
+          <div class="faq-item border-b border-card-border">
+            <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between gap-4 py-4 text-left"><span class="min-w-0 break-words text-[15px] font-semibold">Можно добавить AI-агента?</span><i data-lucide="plus" class="faq-icon w-5 h-5 shrink-0"></i></button>
+            <div class="faq-body"><p class="pb-4 text-[14px] leading-[1.45] text-text-muted">Да, под запрос. Агент отвечает клиентам круглосуточно, знает ваши услуги и может записывать в YClients или DiKiDi. Подключается отдельно или вместе с Mini App.</p></div>
+          </div>
+          <div class="faq-item border-b border-card-border">
+            <button type="button" onclick="toggleFaq(this)" class="w-full flex items-center justify-between gap-4 py-4 text-left"><span class="min-w-0 break-words text-[15px] font-semibold">Что я получу после запуска?</span><i data-lucide="plus" class="faq-icon w-5 h-5 shrink-0"></i></button>
+            <div class="faq-body"><p class="pb-4 text-[14px] leading-[1.45] text-text-muted">Готовый работающий продукт и все доступы к нему.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ФИНАЛЬНЫЙ CTA -->
+      <section id="final-cta" data-section-name="Финальный призыв" class="w-full relative overflow-hidden bg-lagoon px-5 py-12">
+        <div class="absolute inset-0 opacity-[0.07] blueprint pointer-events-none"></div>
+        <div class="relative">
+          <div class="mono text-[12px] text-white/50 mb-4">// следующий шаг</div>
+          <h2 class="display text-[40px] leading-[0.98] text-white">Расскажите о своём продукте — подберу формат упаковки</h2>
+          <p class="mt-4 text-[14px] leading-[1.45] text-white/50">На консультации разберём задачу и предложим решение. Стоимость — после разбора.</p>
+          <div class="mt-7 flex flex-col gap-2.5">
+            <button type="button" onclick="handleCta(event)" class="btn-aqua w-full inline-flex justify-center items-center gap-2 py-3.5 text-[14px] font-semibold">Записаться на консультацию <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+            <button type="button" onclick="scrollToId('diagnostics')" class="btn-ghost-dark w-full inline-flex justify-center items-center gap-2 py-3.5 text-[14px]">Подобрать формат</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="footer" data-section-name="Подвал" class="px-5 py-6">
+        <div class="flex items-center justify-between gap-4">
+          <span class="text-[12px] text-text-muted">© Светлана Леонова</span>
+          <span class="mono text-[11px] text-text-muted">Mini Apps · Тильда</span>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Thumb Bar -->
+    <div id="thumb-bar" class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto px-4 pt-3 translate-y-full transition-transform duration-300 ease-out bg-gradient-to-t from-canvas via-canvas/95 to-transparent" style="padding-bottom: calc(12px + env(safe-area-inset-bottom));">
+      <div class="flex gap-2">
+        <button type="button" onclick="handleCta(event)" class="btn-aqua flex-1 inline-flex justify-center items-center gap-2 py-3.5 text-[14px] font-semibold shadow-cloud">Обсудить проект <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+        <button type="button" onclick="scrollToId('diagnostics')" aria-label="Подобрать формат" class="btn-graphite w-[52px] inline-flex justify-center items-center"><i data-lucide="sparkles" class="w-5 h-5 text-primary"></i></button>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet Drawer (Stories) -->
+    <div id="bottom-drawer" class="fixed inset-0 z-50 pointer-events-none transition-opacity duration-300 opacity-0">
+      <div class="absolute inset-0 bg-ink/35 backdrop-blur-sm" onclick="closeDrawer()"></div>
+      <div class="drawer-panel absolute bottom-0 left-0 right-0 max-w-md mx-auto bg-canvas rounded-t-2xl border-t border-card-border p-5 transform translate-y-full transition-transform duration-300 ease-out max-h-[85vh] overflow-y-auto pointer-events-auto" style="padding-bottom: calc(20px + env(safe-area-inset-bottom));">
+        <div class="w-12 h-1 bg-card-border rounded-full mx-auto mb-4 cursor-pointer" onclick="closeDrawer()"></div>
+        <button type="button" onclick="closeDrawer()" aria-label="Закрыть" class="absolute top-3 right-3 w-8 h-8 rounded-lg bg-surface flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <div id="drawer-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ================== КОНФИГ CTA ================== */
+    var CTA_METHOD = 'openLink';
+    var CTA_ID = 'https://t.me/Leolana9';
+    var CTA_FALLBACK = 'https://t.me/Leolana9';
+
+    /* ================== Haptic ================== */
+    function safeHaptic(kind) {
+      try {
+        if (window.notibot) {
+          if (kind === 'success' || kind === 'error' || kind === 'warning') {
+            if (typeof notibot.hapticNotification === 'function') { notibot.hapticNotification(kind); return; }
+          } else if (kind === 'selection') {
+            if (typeof notibot.hapticSelection === 'function') { notibot.hapticSelection(); return; }
+          } else {
+            if (typeof notibot.hapticImpact === 'function') { notibot.hapticImpact(kind || 'light'); return; }
+          }
+        }
+        if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
+          var hf = Telegram.WebApp.HapticFeedback;
+          if ((kind === 'success' || kind === 'error' || kind === 'warning') && typeof hf.notificationOccurred === 'function') { hf.notificationOccurred(kind); return; }
+          if (kind === 'selection' && typeof hf.selectionChanged === 'function') { hf.selectionChanged(); return; }
+          if (typeof hf.impactOccurred === 'function') { hf.impactOccurred(kind === 'heavy' ? 'heavy' : (kind === 'medium' ? 'medium' : 'light')); return; }
+        }
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+          navigator.vibrate(kind === 'error' ? [30, 40, 30] : 12);
+        }
+      } catch (e) {}
+    }
+
+    /* ================== Иконки ================== */
+    function renderIcons() {
+      try { if (window.lucide && typeof window.lucide.createIcons === 'function') { window.lucide.createIcons(); } } catch (e) {}
+    }
+
+    /* ================== Context-Aware CTA ================== */
+    /* Страница открыта внутри Notibot (iframe) или самостоятельно (GitHub Pages, браузер) */
+    function isEmbedded() {
+      try { return window.self !== window.top; } catch (e) { return true; }
+    }
+
+    /* Прямой переход по ссылке — для самостоятельного открытия страницы */
+    function goDirect(url) {
+      var target = url || CTA_FALLBACK;
+      try {
+        if (window.Telegram && Telegram.WebApp && typeof Telegram.WebApp.openTelegramLink === 'function' && target.indexOf('https://t.me/') === 0) {
+          Telegram.WebApp.openTelegramLink(target);
+          return;
+        }
+      } catch (e) {}
+      var w = null;
+      try { w = window.open(target, '_blank', 'noopener'); } catch (e2) { w = null; }
+      if (!w) { window.location.href = target; }
+    }
+
+    function openFallbackLink() {
+      try {
+        if (isEmbedded() && window.notibot && typeof window.notibot.openLink === 'function') { window.notibot.openLink(CTA_FALLBACK); return; }
+      } catch (e) {}
+      goDirect(CTA_FALLBACK);
+    }
+
+    function handleCta(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      var el = e ? (e.currentTarget || e.target) : null;
+      if (el && el.getAttribute && !el.getAttribute('data-notibot-action') && el.closest) {
+        var holder = el.closest('[data-notibot-action]');
+        if (holder) el = holder;
+      }
+      var action = (el && el.getAttribute) ? el.getAttribute('data-notibot-action') : null;
+      var id = (el && el.getAttribute) ? el.getAttribute('data-id') : null;
+      var url = (el && el.getAttribute) ? el.getAttribute('data-url') : null;
+
+      var method = CTA_METHOD;
+      var arg = CTA_ID;
+      var noArg = false;
+
+      if (action) {
+        if (action === 'openLink' && url) { method = 'openLink'; arg = url; }
+        else if ((action === 'openProduct' || action === 'openArticle') && id) { method = action; arg = id; }
+        else if (action === 'openStorefront' || action === 'openUserCard') { method = action; noArg = true; }
+        /* data-id пустой → действует дефолтный CTA (чат в Telegram) */
+      }
+
+      safeHaptic('medium');
+
+      if (isEmbedded() && window.notibot && typeof window.notibot[method] === 'function') {
+        try {
+          if (noArg) { window.notibot[method](); } else { window.notibot[method](arg); }
+        } catch (err) {
+          openFallbackLink();
+        }
+      } else {
+        /* Вне Notibot (GitHub Pages, обычный браузер) — открываем чат напрямую */
+        goDirect((method === 'openLink' && arg) ? arg : CTA_FALLBACK);
+      }
+    }
+
+    function scrollToId(id) {
+      var el = document.getElementById(id);
+      if (el) { safeHaptic('light'); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    }
+
+    /* ================== Typewriter ================== */
+    (function initTypewriter() {
+      var el = document.getElementById('tw-word');
+      if (!el) return;
+      var words = ['Mini App', 'интерактивный лендинг', 'сайт на Тильде', 'нейрофотосессию'];
+      var wi = 0, ci = words[0].length, deleting = true;
+      function tick() {
+        var w = words[wi];
+        if (deleting) {
+          ci--;
+          el.textContent = w.slice(0, ci);
+          if (ci <= 0) { deleting = false; wi = (wi + 1) % words.length; setTimeout(tick, 280); return; }
+          setTimeout(tick, 38);
+        } else {
+          var nw = words[wi];
+          ci++;
+          el.textContent = nw.slice(0, ci);
+          if (ci >= nw.length) { deleting = true; setTimeout(tick, 2200); return; }
+          setTimeout(tick, 70);
+        }
+      }
+      setTimeout(tick, 2600);
+    })();
+
+    /* ================== Параллакс + Thumb Bar ================== */
+    var heroWrap = document.getElementById('hero-parallax-wrap');
+    var heroFloat = document.getElementById('hero-float');
+    var thumbBar = document.getElementById('thumb-bar');
+    var finalCta = document.getElementById('final-cta');
+    var ticking = false;
+    function onScroll() {
+      var y = window.scrollY || window.pageYOffset || 0;
+      if (heroWrap && y < 900) {
+        heroWrap.style.transform = 'translate3d(0,' + (y * 0.48) + 'px,0) scale(' + (1 + y * 0.0002) + ')';
+      }
+      if (heroFloat && y < 900) {
+        heroFloat.style.transform = 'translate3d(0,' + (-y * 0.18) + 'px,0)';
+      }
+      if (thumbBar) {
+        var show = y > 460;
+        if (finalCta) {
+          var r = finalCta.getBoundingClientRect();
+          if (r.top < window.innerHeight - 80) show = false;
+        }
+        if (show) { thumbBar.classList.remove('translate-y-full'); thumbBar.classList.add('translate-y-0'); }
+        else { thumbBar.classList.remove('translate-y-0'); thumbBar.classList.add('translate-y-full'); }
+      }
+      ticking = false;
+    }
+    window.addEventListener('scroll', function() {
+      if (!ticking) { ticking = true; window.requestAnimationFrame(onScroll); }
+    }, { passive: true });
+
+    /* ================== Reveal + Count-Up ================== */
+    function countUp(el) {
+      var to = parseInt(el.getAttribute('data-to') || '0', 10);
+      if (!to) { el.textContent = '0'; return; }
+      var start = null, dur = 1100;
+      function step(ts) {
+        if (!start) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = String(Math.round(to * eased));
+        if (p < 1) window.requestAnimationFrame(step);
+      }
+      window.requestAnimationFrame(step);
+    }
+    (function initObservers() {
+      var reveals = document.querySelectorAll('.reveal');
+      var counts = document.querySelectorAll('.count');
+      if (!('IntersectionObserver' in window)) {
+        for (var i = 0; i < reveals.length; i++) reveals[i].classList.add('in');
+        for (var j = 0; j < counts.length; j++) counts[j].textContent = counts[j].getAttribute('data-to') || '0';
+        return;
+      }
+      var io = new IntersectionObserver(function(entries) {
+        for (var k = 0; k < entries.length; k++) {
+          var en = entries[k];
+          if (en.isIntersecting) {
+            en.target.classList.add('in');
+            var c = en.target.querySelector ? en.target.querySelector('.count') : null;
+            if (c && !c.getAttribute('data-done')) { c.setAttribute('data-done', '1'); countUp(c); }
+            io.unobserve(en.target);
+          }
+        }
+      }, { threshold: 0.25 });
+      for (var m = 0; m < reveals.length; m++) io.observe(reveals[m]);
+    })();
+
+    /* ================== 3D Flip ================== */
+    function toggleCardFlip(card, event) {
+      if (event && event.target && event.target.closest && event.target.closest('button, a, input, select, textarea, [data-notibot-action]')) return;
+      if (!card) return;
+      var inner = card.querySelector('.flip-card-inner');
+      if (inner) { inner.classList.toggle('is-flipped'); safeHaptic('selection'); }
+    }
+
+    (function initSliderCounter() {
+      var slider = document.getElementById('svc-slider');
+      var counter = document.getElementById('svc-counter');
+      if (!slider || !counter) return;
+      var total = slider.children.length;
+      slider.addEventListener('scroll', function() {
+        var first = slider.children[0];
+        if (!first) return;
+        var w = first.getBoundingClientRect().width + 14;
+        var idx = Math.round(slider.scrollLeft / w) + 1;
+        if (idx < 1) idx = 1;
+        if (idx > total) idx = total;
+        counter.textContent = (idx < 10 ? '0' + idx : idx) + '/' + (total < 10 ? '0' + total : total);
+      }, { passive: true });
+    })();
+
+    /* ================== Подбор формата ================== */
+    var quiz = { role: '', needs: [], channel: '' };
+
+    var needMap = {
+      catalog: { product: 'miniapp', text: 'Продукты и запись в одном месте — витрина и запись внутри Mini App' },
+      base:    { product: 'miniapp', text: 'Своя база и возвраты — каждый пользователь Mini App сохраняется, плюс рассылки и приглашение друзей' },
+      leads:   { product: 'landing', text: 'Заявки с запуска или рекламы — интерактивный лендинг с квизом или диагностикой' },
+      site:    { product: 'tilda',   text: 'Сайт, который можно править самой — сайт на Тильде' },
+      photo:   { product: 'photo',   text: 'Свежие фото для бренда — нейрофотосессия по вашим фото' },
+      auto:    { product: 'ai',      text: 'Автоматические ответы — AI-агент, подключается под запрос' }
+    };
+    var productNames = { miniapp: 'Mini App', landing: 'Интерактивный лендинг', tilda: 'Сайт на Тильде', photo: 'Нейрофотосессия', ai: 'AI-агент' };
+    var needNames = { catalog: 'продукты и запись', base: 'база и возвраты', leads: 'заявки с запуска', site: 'сайт', photo: 'фото для бренда', auto: 'автоответы' };
+    var roleNames = { game: 'игропрактик', soft: 'эксперт мягкой ниши', beauty: 'бьюти', other: 'другой бизнес' };
+    var roleDesc = {
+      game: 'Расписание и описание игр, запись участников и механики вовлечения — в одном приложении.',
+      soft: 'Ваши продукты, консультации и бесплатные материалы — в одном месте, где клиенту легко выбрать и записаться.',
+      beauty: 'Услуги, мастера и запись — в приложении, которое не нужно скачивать.',
+      other: 'Ваши продукты и путь клиента до заявки — в удобном формате для телефона.'
+    };
+    var productDesc = {
+      landing: 'Страница под запуск с интерактивом: квиз, диагностика или калькулятор вовлекают и приводят к заявке.',
+      tilda: 'Аккуратный сайт, который вы сможете обновлять сами в редакторе Tilda.',
+      photo: 'Образы для соцсетей, сайта и обложек — по вашим фото, без студии.',
+      ai: 'Агент отвечает клиентам сразу и круглосуточно и помогает выбрать услугу.'
+    };
+
+    function goStep(n) {
+      var steps = document.querySelectorAll('#diagnostics .q-step');
+      for (var i = 0; i < steps.length; i++) {
+        if (steps[i].getAttribute('data-step') === String(n)) steps[i].classList.add('active');
+        else steps[i].classList.remove('active');
+      }
+      for (var p = 1; p <= 3; p++) {
+        var bar = document.getElementById('qp-' + p);
+        if (bar) bar.style.width = (n > p || n === 4) ? '100%' : (n === p ? '40%' : '0');
+      }
+    }
+
+    function pickSingle(btn, key, value) {
+      if (btn && btn.parentNode) {
+        var sib = btn.parentNode.querySelectorAll('.chip');
+        for (var i = 0; i < sib.length; i++) sib[i].classList.remove('is-on');
+        btn.classList.add('is-on');
+      }
+      safeHaptic('selection');
+      quiz[key] = value;
+      setTimeout(function() {
+        if (key === 'role') goStep(2);
+        else if (key === 'channel') showResult();
+      }, 260);
+    }
+
+    function pickMulti(btn, value) {
+      if (btn) btn.classList.toggle('is-on');
+      safeHaptic('selection');
+      var idx = quiz.needs.indexOf(value);
+      if (idx === -1) quiz.needs.push(value); else quiz.needs.splice(idx, 1);
+      var hint = document.getElementById('q2-hint');
+      if (hint && quiz.needs.length) hint.classList.add('hidden');
+    }
+
+    function nextFromNeeds() {
+      if (!quiz.needs.length) {
+        var hint = document.getElementById('q2-hint');
+        if (hint) hint.classList.remove('hidden');
+        safeHaptic('warning');
+        return;
+      }
+      goStep(3);
+    }
+
+    function showResult() {
+      var products = [];
+      for (var i = 0; i < quiz.needs.length; i++) {
+        var pr = needMap[quiz.needs[i]] ? needMap[quiz.needs[i]].product : null;
+        if (pr && products.indexOf(pr) === -1) products.push(pr);
+      }
+      var priority = ['miniapp', 'landing', 'tilda', 'photo', 'ai'];
+      var main = null;
+      for (var j = 0; j < priority.length; j++) {
+        if (products.indexOf(priority[j]) !== -1) { main = priority[j]; break; }
+      }
+      if (!main) main = 'miniapp';
+      var extras = [];
+      for (var k = 0; k < priority.length; k++) {
+        if (priority[k] !== main && products.indexOf(priority[k]) !== -1) extras.push(priority[k]);
+      }
+
+      var tEl = document.getElementById('res-title');
+      var dEl = document.getElementById('res-desc');
+      var lEl = document.getElementById('res-list');
+      var xWrap = document.getElementById('res-extras-wrap');
+      var xEl = document.getElementById('res-extras');
+      var chEl = document.getElementById('res-channel');
+
+      if (tEl) tEl.textContent = productNames[main];
+      if (dEl) dEl.textContent = (main === 'miniapp') ? (roleDesc[quiz.role] || roleDesc.other) : productDesc[main];
+
+      if (xWrap && xEl) {
+        if (extras.length) {
+          var chips = '';
+          for (var x = 0; x < extras.length; x++) {
+            var label = productNames[extras[x]] + (extras[x] === 'ai' ? ' · под запрос' : '');
+            chips += '<span class="text-[13px] bg-canvas border border-card-border rounded-xl px-3 py-1.5">' + label + '</span>';
+          }
+          xEl.innerHTML = chips;
+          xWrap.classList.remove('hidden');
+        } else {
+          xEl.innerHTML = '';
+          xWrap.classList.add('hidden');
+        }
+      }
+
+      if (lEl) {
+        var html = '';
+        for (var n = 0; n < quiz.needs.length; n++) {
+          var item = needMap[quiz.needs[n]];
+          if (!item) continue;
+          html += '<li class="flex gap-2 text-[14px] leading-[1.35] text-charcoal"><span class="mt-0.5 w-4 h-4 rounded-[5px] bg-primary flex items-center justify-center shrink-0"><i data-lucide="check" class="w-3 h-3"></i></span><span class="min-w-0 break-words">' + item.text + '</span></li>';
+        }
+        lEl.innerHTML = html;
+      }
+
+      var chText = '';
+      if (quiz.channel === 'Telegram') chText = 'Ваша аудитория в Telegram — Mini App откроется у неё в один тап, без скачивания.';
+      else if (quiz.channel === 'Instagram' || quiz.channel === 'ВКонтакте') chText = 'Аудитория в соцсетях — ссылка из профиля может вести на лендинг или сайт, а дальше в Telegram.';
+      else chText = 'Аудитория в разных каналах — свяжем их в один путь клиента до записи.';
+      if (chEl) chEl.textContent = chText;
+
+      quiz.main = productNames[main];
+      quiz.extras = [];
+      for (var q = 0; q < extras.length; q++) quiz.extras.push(productNames[extras[q]]);
+
+      var copyBox = document.getElementById('res-copy');
+      if (copyBox) copyBox.classList.add('hidden');
+      goStep(4);
+      renderIcons();
+      safeHaptic('success');
+    }
+
+    function buildSummary() {
+      var names = [];
+      for (var i = 0; i < quiz.needs.length; i++) names.push(needNames[quiz.needs[i]]);
+      return 'Здравствуйте, Светлана! Прошёл(ла) подбор формата.\n' +
+             'Кто я: ' + (roleNames[quiz.role] || '—') + '\n' +
+             'Что нужно: ' + (names.length ? names.join(', ') : '—') + '\n' +
+             'Где аудитория: ' + (quiz.channel || '—') + '\n' +
+             'Рекомендация: ' + (quiz.main || '—') + (quiz.extras && quiz.extras.length ? ' + ' + quiz.extras.join(', ') : '');
+    }
+
+    function discussResult(e) {
+      var copyBox = document.getElementById('res-copy');
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          navigator.clipboard.writeText(buildSummary()).then(function() {
+            if (copyBox) copyBox.classList.remove('hidden');
+          }, function() {});
+        }
+      } catch (err) {}
+      handleCta(e);
+    }
+
+    function resetQuiz() {
+      quiz = { role: '', needs: [], channel: '' };
+      var chips = document.querySelectorAll('#diagnostics .chip');
+      for (var i = 0; i < chips.length; i++) chips[i].classList.remove('is-on');
+      var hint = document.getElementById('q2-hint');
+      if (hint) hint.classList.add('hidden');
+      goStep(1);
+      safeHaptic('light');
+    }
+
+    /* ================== FAQ ================== */
+    function toggleFaq(btn) {
+      if (!btn) return;
+      var item = btn.closest ? btn.closest('.faq-item') : null;
+      if (!item) return;
+      var body = item.querySelector('.faq-body');
+      if (item.classList.contains('open')) {
+        item.classList.remove('open');
+        if (body) body.style.maxHeight = '0';
+      } else {
+        item.classList.add('open');
+        if (body) body.style.maxHeight = body.scrollHeight + 'px';
+      }
+      safeHaptic('selection');
+    }
+
+    /* ================== Drawer + Stories ================== */
+    function tile(title, sub) {
+      return '<div class="bg-surface rounded-xl p-3"><div class="text-[13px] font-semibold">' + title + '</div><div class="text-[12px] text-text-muted mt-1">' + sub + '</div></div>';
+    }
+    function checkItem(text) {
+      return '<li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 shrink-0"></i><span class="min-w-0">' + text + '</span></li>';
+    }
+
+    var stories = {
+      game: {
+        tag: 'идея · что можно собрать',
+        title: 'Mini App для игропрактика',
+        body: '<p class="text-[14px] leading-[1.45] text-text-muted mb-4">Пример того, что может быть внутри приложения:</p>' +
+              '<div class="grid grid-cols-2 gap-2">' +
+              tile('Афиша игр', 'Даты, форматы, онлайн и офлайн') +
+              tile('Описание игр', 'Запрос, механика, результат') +
+              tile('Запись', 'Участник записывается в пару тапов') +
+              tile('Своя база', 'Контакты остаются у вас') +
+              tile('Пригласи друга', 'Геймификация и бонусы') +
+              tile('Рассылки', 'Анонсы новых игр') +
+              '</div>' +
+              '<p class="mono text-[11px] text-text-muted mt-3">// состав подбираем под вас на консультации</p>',
+        btn: 'Хочу такое приложение'
+      },
+      expert: {
+        tag: 'идея · что можно собрать',
+        title: 'Для эксперта мягкой ниши',
+        body: '<p class="text-[14px] leading-[1.45] text-text-muted mb-4">Психологу, коучу, нутрициологу или астрологу — всё, что нужно клиенту, в одном месте:</p>' +
+              '<ul class="space-y-2.5 text-[14px] leading-[1.4] text-charcoal">' +
+              checkItem('Продукты и консультации с понятными описаниями') +
+              checkItem('Бесплатный гайд или мини-диагностика для сбора базы') +
+              checkItem('Запись на консультацию в пару тапов') +
+              checkItem('Нейрофото для единого стиля бренда') +
+              '</ul>',
+        btn: 'Обсудить упаковку'
+      },
+      spa: {
+        tag: 'кейс · бьюти',
+        title: 'Mini App и AI-консьерж для SPA-салона',
+        body: '<div class="relative h-[180px] rounded-2xl overflow-hidden mb-4"><img data-replaceable-image="true" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=800&q=80" alt="SPA-салон" class="absolute inset-0 w-full h-full object-cover pointer-events-auto cursor-pointer select-none" draggable="false" /><div class="absolute inset-0 bg-gradient-to-t from-ink/60 to-transparent pointer-events-none"></div></div>' +
+              '<div class="text-[13px] font-semibold mb-2">Mini App</div>' +
+              '<ul class="space-y-2 text-[14px] leading-[1.4] text-charcoal mb-4">' +
+              checkItem('Открывается внутри Telegram — без скачивания') +
+              checkItem('Каждый гость остаётся в базе салона') +
+              checkItem('Геймификация: друзья приглашают друзей') +
+              '</ul>' +
+              '<div class="text-[13px] font-semibold mb-2">AI-консьерж</div>' +
+              '<ul class="space-y-2 text-[14px] leading-[1.4] text-charcoal">' +
+              checkItem('Интеграция с YClients: знает услуги и мастеров') +
+              checkItem('Сам записывает, переносит и отменяет визиты') +
+              '</ul>',
+        btn: 'Обсудить мой проект'
+      }
+    };
+
+    function lockScroll(locked) {
+      try { if (window.notibot && typeof window.notibot.setScrollLock === 'function') window.notibot.setScrollLock(locked); } catch (e) {}
+      document.documentElement.style.overflow = locked ? 'hidden' : '';
+    }
+
+    function openDrawer(title, tag, bodyHtml, btnText) {
+      var d = document.getElementById('bottom-drawer');
+      if (!d) return;
+      safeHaptic('selection');
+      var content = document.getElementById('drawer-content');
+      if (content) {
+        content.innerHTML =
+          '<div class="mono text-[11px] text-text-muted">// ' + tag + '</div>' +
+          '<h3 class="display text-[28px] leading-[1] mt-1 mb-4 pr-8">' + title + '</h3>' +
+          '<div class="mb-6">' + bodyHtml + '</div>' +
+          '<button type="button" onclick="handleCta(event)" class="btn-aqua w-full inline-flex justify-center items-center gap-2 py-3.5 text-[14px] font-semibold">' + (btnText || 'Написать') + ' <i data-lucide="arrow-right" class="w-4 h-4"></i></button>';
+      }
+      renderIcons();
+      var panel = d.querySelector('.drawer-panel');
+      d.classList.remove('pointer-events-none', 'opacity-0');
+      d.classList.add('pointer-events-auto', 'opacity-100');
+      if (panel) { panel.scrollTop = 0; panel.classList.remove('translate-y-full'); panel.classList.add('translate-y-0'); }
+      lockScroll(true);
+    }
+
+    function closeDrawer() {
+      var d = document.getElementById('bottom-drawer');
+      if (!d) return;
+      safeHaptic('light');
+      var panel = d.querySelector('.drawer-panel');
+      if (panel) { panel.classList.remove('translate-y-0'); panel.classList.add('translate-y-full'); }
+      setTimeout(function() {
+        d.classList.remove('pointer-events-auto', 'opacity-100');
+        d.classList.add('pointer-events-none', 'opacity-0');
+      }, 300);
+      lockScroll(false);
+    }
+
+    function openStory(key) {
+      var s = stories[key];
+      if (!s) return;
+      openDrawer(s.title, s.tag, s.body, s.btn);
+    }
+
+    /* Свайп вниз для закрытия шторки */
+    (function initDrawerSwipe() {
+      var d = document.getElementById('bottom-drawer');
+      var panel = d ? d.querySelector('.drawer-panel') : null;
+      if (!panel) return;
+      var startY = null;
+      panel.addEventListener('touchstart', function(ev) {
+        if (panel.scrollTop > 0) { startY = null; return; }
+        startY = ev.touches && ev.touches[0] ? ev.touches[0].clientY : null;
+      }, { passive: true });
+      panel.addEventListener('touchend', function(ev) {
+        if (startY === null) return;
+        var endY = ev.changedTouches && ev.changedTouches[0] ? ev.changedTouches[0].clientY : startY;
+        if (endY - startY > 90) closeDrawer();
+        startY = null;
+      }, { passive: true });
+    })();
+
+    document.addEventListener('keydown', function(ev) {
+      if (ev && ev.key === 'Escape') closeDrawer();
+    });
+
+    renderIcons();
+    goStep(1);
+
+    /* ================== NOTIBOT INIT (Режим А — хардкод цветов) ================== */
+    // applyThemeColors НЕ СУЩЕСТВУЕТ в коде. Никаких setProperty для цветов.
+    var elLoading = document.getElementById('loading-screen');
+    var elUserGreeting = document.getElementById('userGreeting');
+    var elUserAvatar = document.getElementById('userAvatar');
+    var elCreditsBadge = document.getElementById('creditsBadge');
+    var elUserBalance = document.getElementById('userBalance');
+
+    function getInitials(name) {
+      if (!name) return '?';
+      var parts = name.trim().split(/\s+/);
+      var a = parts[0] ? parts[0].charAt(0) : '';
+      var b = parts.length > 1 ? parts[1].charAt(0) : '';
+      return (a + b).toUpperCase() || '?';
+    }
+
+    function applyPersonalization(user) {
+      if (!user) return;
+      if (elUserGreeting) {
+        elUserGreeting.textContent = user.displayName ? ('Привет, ' + user.displayName + '!') : 'Привет!';
+      }
+      if (elUserAvatar) {
+        var initials = getInitials(user.displayName);
+        if (user.photoURL) {
+          var img = document.createElement('img');
+          img.alt = '';
+          img.src = user.photoURL;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '9999px';
+          img.onerror = function() { if (elUserAvatar) elUserAvatar.textContent = initials; };
+          elUserAvatar.innerHTML = '';
+          elUserAvatar.appendChild(img);
+        } else {
+          elUserAvatar.textContent = initials;
+        }
+      }
+      if (elCreditsBadge && user.aiCredits !== undefined) {
+        elCreditsBadge.textContent = user.aiCredits;
+      }
+      if (elUserBalance && user.balance !== undefined) {
+        elUserBalance.textContent = user.balance;
+      }
+    }
+
+    function hideLoader() {
+      if (elLoading && elLoading.style.display !== 'none') {
+        elLoading.style.opacity = '0';
+        setTimeout(function() {
+          if (elLoading) elLoading.style.display = 'none';
+        }, 200);
+      }
+    }
+
+    function handleNotibotInit(user, app) {
+      // ВАЖНО: app.colors ИГНОРИРУЮТСЯ. Только персонализация и скрытие лоадера.
+      applyPersonalization(user);
+      hideLoader();
+    }
+
+    function isNonEmptyObj(obj) {
+      try {
+        return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    if (window.notibot) {
+      try {
+        if (typeof window.notibot.onUpdate === 'function') {
+          window.notibot.onUpdate(function(user, app) {
+            // onUpdate обновляет только персонализацию — без сброса экранов
+            applyPersonalization(user);
+          });
+        }
+      } catch (e) {}
+
+      if (window.notibotInitData) {
+        handleNotibotInit(window.notibotInitData.user, window.notibotInitData.app);
+      } else if (isNonEmptyObj(window.notibot.app) || isNonEmptyObj(window.notibot.user)) {
+        handleNotibotInit(window.notibot.user, window.notibot.app);
+      }
+      setTimeout(function() {
+        hideLoader();
+      }, 800);
+    } else {
+      setTimeout(function() {
+        hideLoader();
+      }, 300);
+    }
+  </script>
+</body>
+</html>
